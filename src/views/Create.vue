@@ -11,7 +11,10 @@
     <!-- CREATE FORM -->
     <div class="p-8 flex items-start bg-light-grey rounded-md shadow-lg">
       <!-- FORM -->
-      <form class="flex flex-col gap-y-5 w-full">
+      <form
+        @submit.prevent="createWorkout"
+        class="flex flex-col gap-y-5 w-full"
+      >
         <h1 class="text-2xl text-at-blue">Record Workout</h1>
         <!-- WORKOUT NAME -->
         <div class="flex flex-col">
@@ -33,6 +36,7 @@
             >Workout Type</label
           >
           <select
+            @change="workoutChange"
             id="workout-type"
             class="p-2 text-gray-500 focus:outline-none"
             required
@@ -96,12 +100,14 @@
               />
             </div>
             <img
+              @click="deleteExercise(item.id)"
               src="@/assets/images/trash-light-green.png"
               class="h-4 w-auto absolute -left-5 cursor-pointer"
               alt=""
             />
           </div>
           <button
+            @click="addExercise"
             type="button"
             class="mt-6 py-2 px-6 rounded-md self-start text-sm text-white bg-at-light-blue duration-200 border-solid border-2 border-transparent hover:border-at-blue hover:bg-at-blue hover:text-white"
           >
@@ -163,12 +169,14 @@
               />
             </div>
             <img
+              @click="deleteExercise(item.id)"
               src="@/assets/images/trash-light-green.png"
               class="h-4 w-auto absolute -left-5 cursor-pointer"
               alt=""
             />
           </div>
           <button
+            @click="addExercise"
             type="button"
             class="mt-6 py-2 px-6 rounded-md self-start text-sm text-white bg-at-light-blue duration-200 border-solid border-2 border-transparent hover:border-at-blue hover:bg-at-blue hover:text-white"
           >
@@ -188,25 +196,97 @@
 
 <script>
 import { ref } from "vue";
+import { uid } from "uid";
+import { supabase } from "../supabase/init";
 export default {
   name: "create",
   setup() {
     // CREATE DATA
     const workoutName = ref("");
     const workoutType = ref("select-workout");
-    const exercises = ref([1]);
+    const exercises = ref([]);
     const statusMsg = ref(null);
     const errorMsg = ref(null);
 
-    // Add exercise
+    // ADD EXERCISE
+    const addExercise = () => {
+      if (workoutType.value === "strength") {
+        exercises.value.push({
+          id: uid(),
+          exercise: "",
+          sets: "",
+          reps: "",
+          weight: "",
+        });
+        return;
+      }
+      exercises.value.push({
+        id: uid(),
+        cardioType: "",
+        distance: "",
+        duration: "",
+        pace: "",
+      });
+    };
 
-    // Delete exercise
+    // DELETE EXERCISE
+    const deleteExercise = (id) => {
+      if (exercises.value.length > 1) {
+        exercises.value = exercises.value.filter(
+          (exercise) => exercise.id !== id
+        );
+        return;
+      }
+      errorMsg.value =
+        "Error: Cannot remove, need to have at least one exercise";
+      setTimeout(() => {
+        errorMsg.value = false;
+      }, 7000);
+    };
 
-    // Listens for chaging of workout type input
+    // LISTENS FOR CHANGING OF WORKOUT TYPE INPUT
+    const workoutChange = () => {
+      exercises.value = [];
+      addExercise();
+    };
 
-    // Create workout
+    // CREATE WORKOUT
+    const createWorkout = async () => {
+      try {
+        const { error } = await supabase.from("workouts").insert([
+          {
+            workoutName: workoutName.value,
+            workoutType: workoutType.value,
+            exercises: exercises.value,
+          },
+        ]);
+        if (error) throw error;
+        statusMsg.value = "Success: Workout has been created";
+        workoutName.value = null;
+        workoutType.value = "select-workout";
+        exercises.value = [];
+        setTimeout(() => {
+          statusMsg.value = false;
+        }, 7000);
+      } catch (error) {
+        errorMsg.value = `Error: ${error.message}`;
+        setTimeout(() => {
+          errorMsg.value = false;
+        }, 7000);
+      }
+    };
 
-    return { workoutName, workoutType, exercises, statusMsg, errorMsg };
+    return {
+      workoutName,
+      workoutType,
+      exercises,
+      statusMsg,
+      errorMsg,
+      addExercise,
+      workoutChange,
+      deleteExercise,
+      createWorkout,
+    };
   },
 };
 </script>
