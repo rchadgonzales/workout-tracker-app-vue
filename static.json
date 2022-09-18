@@ -1,7 +1,30 @@
 {
-  "root": "dist",
+  "root": "dist/",
+  "canonical_host": "${HOST}",
+  "encoding": "US-ASCII",
   "clean_urls": true,
+  "logging": {
+    "access": false,
+    "error": "warn"
+  },
   "routes": {
+    "/*.html": "index.html",
+    "/route/**": "bar/baz.html",
+    "/assets/*": "/assets/",
     "/**": "index.html"
+  },
+  "redirects": {
+    "/old/gone/": {
+      "url": "/",
+      "status": 302
+    }
+  },
+  "error_page": "errors/error.html",
+  "https_only": true,
+  "basic_auth": true,
+  "proxies": {
+    "/api/": {
+      "origin": "https://${API_APP_NAME}.herokuapp.com/"
+    }
   }
 }
